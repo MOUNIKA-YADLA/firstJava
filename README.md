@@ -1,9 +1,19 @@
-spring.datasource.url=jdbc:postgresql://localhost:5432/bankdb
-spring.datasource.username=your_username
-spring.datasource.password=your_password
-spring.datasource.driver-class-name=org.postgresql.Driver
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.hibernate.ddl-auto=update
+package com.bankaccount.bulkupload.model;
 
-server.port=8080
-spring.thymeleaf.cache=false
+import javax.persistence.*;
+import lombok.Data;
+
+@Data
+@Entity
+@Table(name = "bank_accounts")
+public class BankAccount {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(unique = true, length = 8, nullable = false)
+    private String accountId;
+
+    @Column(nullable = false)
+    private String accountName;
+}
