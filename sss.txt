@@ -1,1 +1,425 @@
+Step 3: Configure application.properties
+properties
+Copy
+Edit
+spring.datasource.url=jdbc:postgresql://localhost:5432/bankdb
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=update
 
+server.port=8080
+spring.thymeleaf.cache=false
+Step 4: Create the BankAccount Model
+java
+Copy
+Edit
+package com.bankaccount.bulkupload.model;
+
+import javax.persistence.*;
+import lombok.Data;
+
+@Data
+@Entity
+@Table(name = "bank_accounts")
+public class BankAccount {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(unique = true, length = 8, nullable = false)
+    private String accountId;
+
+    @Column(nullable = false)
+    private String accountName;
+}
+Step 5: Create the User Model
+java
+Copy
+Edit
+package com.bankaccount.bulkupload.model;
+
+import javax.persistence.*;
+import lombok.Data;
+
+@Data
+@Entity
+@Table(name = "users")
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(unique = true, nullable = false)
+    private String username;
+
+    @Column(nullable = false)
+    private String password;
+}
+Step 6: Create Repository Interfaces
+java
+Copy
+Edit
+package com.bankaccount.bulkupload.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import com.bankaccount.bulkupload.model.BankAccount;
+
+public interface BankAccountRepository extends JpaRepository<BankAccount, Long> {
+}
+java
+Copy
+Edit
+package com.bankaccount.bulkupload.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import com.bankaccount.bulkupload.model.User;
+
+public interface UserRepository extends JpaRepository<User, Long> {
+    User findByUsername(String username);
+}
+Step 7: Create Authentication Service
+java
+Copy
+Edit
+package com.bankaccount.bulkupload.service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import com.bankaccount.bulkupload.model.User;
+import com.bankaccount.bulkupload.repository.UserRepository;
+
+@Service
+public class UserService {
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    public void registerUser(String username, String password) {
+        User user = new User();
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode(password));
+        userRepository.save(user);
+    }
+
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username);
+    }
+}
+Step 8: Implement Security Configuration
+java
+Copy
+Edit
+package com.bankaccount.bulkupload.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+@Configuration
+public class SecurityConfig {
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
+Step 9: Create Controllers
+AuthController.java
+java
+Copy
+Edit
+package com.bankaccount.bulkupload.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.ui.Model;
+import com.bankaccount.bulkupload.service.UserService;
+
+@Controller
+public class AuthController {
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("/login")
+    public String login() {
+        return "login";
+    }
+
+    @GetMapping("/register")
+    public String register() {
+        return "register";
+    }
+
+    @PostMapping("/register")
+    public String registerUser(@RequestParam String username, @RequestParam String password) {
+        userService.registerUser(username, password);
+        return "redirect:/login";
+    }
+}
+UploadController.java
+java
+Copy
+Edit
+package com.bankaccount.bulkupload.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+
+@Controller
+public class UploadController {
+    @GetMapping("/upload")
+    public String uploadPage() {
+        return "upload";
+    }
+}
+DashboardController.java
+java
+Copy
+Edit
+package com.bankaccount.bulkupload.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+
+@Controller
+public class DashboardController {
+    @GetMapping("/dashboard")
+    public String dashboard() {
+        return "dashboard";
+    }
+}
+Step 10: Create Thymeleaf Templates
+You already have these in your project. Add a styles.css file for better UI.
+
+Step 11: Run the Application
+Open a terminal in your project directory.
+Run:
+sh
+Copy
+Edit
+mvn spring-boot:run
+Open http://localhost:8080/login in your browser.
+Step 12: Test the Application
+Register a new user.
+Log in.
+Navigate to the dashboard.
+Upload an Excel file.
+Validate the data in the database.
+
+
+
+
+
+
+
+
+MMMMMMMMMMMMM
+
+
+
+
+
+
+
+
+
+
+give me html css files and ExcelService.java
+ChatGPT said:
+Here are the required HTML, CSS files, and ExcelService.java for your project.
+
+1. dashboard.html
+html
+Copy
+Edit
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <h1>Welcome to the Dashboard</h1>
+    <nav>
+        <a href="/upload">Upload Bank Accounts</a>
+        <a href="/logout">Logout</a>
+    </nav>
+</body>
+</html>
+2. login.html
+html
+Copy
+Edit
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Login</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <h2>Login</h2>
+    <form method="post" action="/login">
+        <label>Username:</label>
+        <input type="text" name="username" required>
+        <label>Password:</label>
+        <input type="password" name="password" required>
+        <button type="submit">Login</button>
+    </form>
+    <a href="/register">Register</a>
+</body>
+</html>
+3. register.html
+html
+Copy
+Edit
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Register</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <h2>Register</h2>
+    <form method="post" action="/register">
+        <label>Username:</label>
+        <input type="text" name="username" required>
+        <label>Password:</label>
+        <input type="password" name="password" required>
+        <button type="submit">Register</button>
+    </form>
+    <a href="/login">Login</a>
+</body>
+</html>
+4. upload.html
+html
+Copy
+Edit
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Upload Bank Accounts</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <h2>Upload Bank Accounts</h2>
+    <form method="post" action="/upload" enctype="multipart/form-data">
+        <input type="file" name="file" required>
+        <button type="submit">Upload</button>
+    </form>
+    <a href="/dashboard">Back to Dashboard</a>
+</body>
+</html>
+5. styles.css
+css
+Copy
+Edit
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    text-align: center;
+    padding: 20px;
+}
+
+h1, h2 {
+    color: #333;
+}
+
+form {
+    display: inline-block;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+input, button {
+    display: block;
+    width: 100%;
+    margin: 10px 0;
+    padding: 8px;
+}
+
+button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #218838;
+}
+
+a {
+    display: inline-block;
+    margin-top: 10px;
+    color: #007bff;
+}
+6. ExcelService.java
+java
+Copy
+Edit
+package com.bankaccount.bulkupload.service;
+
+import com.bankaccount.bulkupload.model.BankAccount;
+import com.bankaccount.bulkupload.repository.BankAccountRepository;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+public class ExcelService {
+
+    @Autowired
+    private BankAccountRepository bankAccountRepository;
+
+    public void saveBankAccountsFromExcel(MultipartFile file) {
+        try {
+            List<BankAccount> bankAccounts = parseExcelFile(file.getInputStream());
+            bankAccountRepository.saveAll(bankAccounts);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to process the file: " + e.getMessage());
+        }
+    }
+
+    private List<BankAccount> parseExcelFile(InputStream inputStream) {
+        List<BankAccount> bankAccounts = new ArrayList<>();
+        try {
+            Workbook workbook = new XSSFWorkbook(inputStream);
+            Sheet sheet = workbook.getSheetAt(0);
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) continue; // Skip header row
+
+                Cell accountIdCell = row.getCell(0);
+                Cell accountNameCell = row.getCell(1);
+
+                if (accountIdCell != null && accountNameCell != null) {
+                    BankAccount bankAccount = new BankAccount();
+                    bankAccount.setAccountId(accountIdCell.getStringCellValue());
+                    bankAccount.setAccountName(accountNameCell.getStringCellValue());
+                    bankAccounts.add(bankAccount);
+                }
+            }
+            workbook.close();
+        } catch (Exception e) {
+            throw new RuntimeException("Error processing Excel file: " + e.getMessage());
+        }
+        return bankAccounts;
+    }
+}
+This should complete your HTML, CSS, and Excel service setup. Let me know if you need any changes! 🚀
