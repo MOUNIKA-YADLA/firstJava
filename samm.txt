@@ -1,3 +1,61 @@
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/login").permitAll()  // Allow login page access
+                .requestMatchers("/upload").hasRole("ADMIN")  // Protect upload page for ADMIN role
+                .anyRequest().authenticated())  // All other pages require authentication
+            .formLogin(login -> login
+                .loginPage("/login")
+                .defaultSuccessUrl("/upload", true)  // Redirect to upload page after successful login
+                .permitAll())
+            .logout(logout -> logout
+                .logoutSuccessUrl("/login?logout=true")
+                .permitAll())
+            .csrf().disable();  // Disable CSRF temporarily for easier testing
+        
+        return http.build();
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        UserDetails admin = User.builder()
+            .username("admin")
+            .password("{noop}admin123")  // 'noop' specifies no encoding for simplicity
+            .roles("ADMIN")  // Assign ADMIN role
+            .build();
+
+        return new InMemoryUserDetailsManager(admin);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 In this way i dont know how to see codes give me codes seperately one by one in chat
 ChatGPT said:
 Memory updated
