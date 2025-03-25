@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Bank Account Management</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        /* Background Styling */
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Dashboard Container */
+        .dashboard-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 5px 20px rgba(0, 0, 0, 0.3);
+            margin-top: 20px;
+            color: black;
+            text-align: center;
+        }
+
+        /* Cards Styling */
+        .dashboard-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+            padding: 25px;
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .dashboard-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .dashboard-card h4 {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        /* Logout Styling */
+        .logout-link {
+            font-weight: bold;
+            color: red;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .logout-link:hover {
+            color: darkred;
+            text-decoration: underline;
+        }
+
+        /* Spacing */
+        .section-spacing {
+            margin-top: 30px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container mt-4">
+    <!-- Logout Section -->
+    <div sec:authorize="isAuthenticated()">
+        <form id="logoutForm" method="POST" th:action="@{/logout}">
+            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}" />
+        </form>
+
+        <h2 class="text-center">
+            Welcome <span sec:authentication="name"></span> |  
+            <a href="#" class="logout-link" onclick="document.forms['logoutForm'].submit()">Logout</a>
+        </h2>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard-container mt-4">
+        <h3 class="text-center">🏦 Bank Account Management Dashboard</h3>
+        <p>Manage your bank accounts efficiently with bulk upload and reports.</p>
+
+        <!-- Dashboard Cards -->
+        <div class="row section-spacing">
+            <div class="col-md-4">
+                <div class="dashboard-card">
+                    <h4>📂 Upload Excel File</h4>
+                    <p>Upload bulk bank account details using an Excel file.</p>
+                    <a href="/upload-excel" class="btn btn-primary">Upload Now</a>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="dashboard-card">
+                    <h4>📊 View Bank Accounts</h4>
+                    <p>Check all bank accounts with details and filters.</p>
+                    <a href="/view-accounts" class="btn btn-success">View Accounts</a>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="dashboard-card">
+                    <h4>📄 Download Reports</h4>
+                    <p>Generate and download financial reports easily.</p>
+                    <a href="/reports" class="btn btn-info">Download Reports</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Features -->
+        <div class="row section-spacing">
+            <div class="col-md-6">
+                <div class="dashboard-card">
+                    <h4>➕ Add New Account</h4>
+                    <p>Create a new bank account for users.</p>
+                    <a href="/add-account" class="btn btn-warning">Add Account</a>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="dashboard-card">
+                    <h4>💰 View Transactions</h4>
+                    <p>See recent account transactions and history.</p>
+                    <a href="/transactions" class="btn btn-secondary">View Transactions</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="row section-spacing">
+            <div class="col-md-12">
+                <div class="dashboard-card">
+                    <h4>📜 Recent Activity</h4>
+                    <table class="table table-bordered table-striped mt-3">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>Account Holder</th>
+                                <th>Account Number</th>
+                                <th>Uploaded By</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="account : ${recentAccounts}">
+                                <td th:text="${account.holderName}">John Doe</td>
+                                <td th:text="${account.accountNumber}">1234567890</td>
+                                <td th:text="${account.uploadedBy}">Admin</td>
+                                <td th:text="${account.uploadDate}">2025-03-25</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Support -->
+        <div class="row section-spacing">
+            <div class="col-md-6">
+                <div class="dashboard-card">
+                    <h4>📞 Contact Support</h4>
+                    <p>Need help? Get in touch with our support team.</p>
+                    <a href="/support" class="btn btn-primary">Contact Us</a>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="dashboard-card">
+                    <h4>❓ FAQ</h4>
+                    <p>Find answers to commonly asked questions.</p>
+                    <a href="/faq" class="btn btn-info">Visit FAQ</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
