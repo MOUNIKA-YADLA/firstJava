@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Bank Account Management</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: Arial, sans-serif;
+        }
+        .dashboard-container, .extra-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
+            margin-top: 20px;
+        }
+        .dashboard-header {
+            color: #333;
+            font-weight: bold;
+        }
+        .btn-custom {
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+        .btn-custom:hover {
+            transform: scale(1.05);
+        }
+        .logout-link {
+            font-weight: bold;
+            color: red;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+        .logout-link:hover {
+            color: darkred;
+            text-decoration: underline;
+        }
+        .quick-actions, .support-section {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .quick-actions .btn, .support-section .btn {
+            width: 220px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container mt-4">
+    <!-- Logout Section -->
+    <div sec:authorize="isAuthenticated()">
+        <form id="logoutForm" method="POST" th:action="@{/logout}">
+            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}" />
+        </form>
+
+        <h2 class="text-center">
+            Welcome <span sec:authentication="name"></span> |  
+            <a href="#" class="logout-link" onclick="document.forms['logoutForm'].submit()">Logout</a>
+        </h2>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard-container mt-4">
+        <h3 class="dashboard-header text-center">Bank Account Management Dashboard</h3>
+        <p class="text-center">Manage your bank accounts efficiently with bulk upload and reports.</p>
+        
+        <div class="row text-center mt-4">
+            <div class="col-md-4">
+                <a href="/upload-excel" class="btn btn-primary btn-custom btn-block">📂 Upload Excel File</a>
+            </div>
+            <div class="col-md-4">
+                <a href="/view-accounts" class="btn btn-success btn-custom btn-block">📊 View Bank Accounts</a>
+            </div>
+            <div class="col-md-4">
+                <a href="/reports" class="btn btn-info btn-custom btn-block">📄 Download Reports</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="extra-section mt-4">
+        <h4 class="text-center">Quick Actions</h4>
+        <div class="quick-actions text-center mt-3">
+            <a href="/add-account" class="btn btn-warning btn-custom">➕ Add New Account</a>
+            <a href="/transactions" class="btn btn-secondary btn-custom">💰 View Transactions</a>
+            <a href="/settings" class="btn btn-dark btn-custom">⚙️ Account Settings</a>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="extra-section mt-4">
+        <h4 class="text-center">Recent Activity</h4>
+        <table class="table table-bordered table-striped mt-3">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Account Holder</th>
+                    <th>Account Number</th>
+                    <th>Uploaded By</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="account : ${recentAccounts}">
+                    <td th:text="${account.holderName}">John Doe</td>
+                    <td th:text="${account.accountNumber}">1234567890</td>
+                    <td th:text="${account.uploadedBy}">Admin</td>
+                    <td th:text="${account.uploadDate}">2025-03-25</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Customer Support -->
+    <div class="extra-section mt-4">
+        <h4 class="text-center">Need Help? Contact Us</h4>
+        <div class="support-section text-center mt-3">
+            <a href="/support" class="btn btn-primary btn-custom">📞 Contact Support</a>
+            <a href="/faq" class="btn btn-info btn-custom">❓ FAQ</a>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
