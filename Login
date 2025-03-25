@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Login | Bank Account Management</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        /* Background Styling */
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Login Card */
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0px 5px 20px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            width: 400px;
+        }
+
+        .login-card h2 {
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #2a5298;
+        }
+
+        /* Form Controls */
+        .form-control {
+            border-radius: 8px;
+            box-shadow: none;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            background: #2a5298;
+            border: none;
+            transition: 0.3s;
+        }
+
+        .btn-primary:hover {
+            background: #1e3c72;
+        }
+
+        /* Error Messages */
+        .error {
+            color: red;
+            font-size: 14px;
+        }
+
+        /* Registration Link */
+        .register-link {
+            margin-top: 15px;
+            font-size: 16px;
+            display: block;
+        }
+
+        .register-link a {
+            color: #1e3c72;
+            font-weight: bold;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
+            color: #0d1f40;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h2>🔐 Login to Your Account</h2>
+
+    <form class="form-signin" method="POST" th:action="@{/login}">
+        <div th:if="${message}" class="alert alert-danger" role="alert">
+            <span th:text="${message}"></span>
+        </div>
+
+        <div class="form-group">
+            <input name="username" type="text" class="form-control" placeholder="Username" required autofocus>
+        </div>
+
+        <div class="form-group">
+            <input name="password" type="password" class="form-control" placeholder="Password" required>
+        </div>
+
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}" />
+
+        <button type="submit" class="btn btn-primary">Login</button>
+    </form>
+
+    <div class="register-link">
+        Don't have an account? <a href="/registration">Create one</a>
+    </div>
+</div>
+
+</body>
+</html>
