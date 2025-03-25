@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Welcome to Banking System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        function updateTime() {
+            const now = new Date();
+            let hours = now.getHours();
+            let minutes = now.getMinutes();
+            let seconds = now.getSeconds();
+            let amPm = hours >= 12 ? 'PM' : 'AM';
+
+            hours = hours % 12 || 12; // Convert 24-hour time to 12-hour format
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            seconds = seconds < 10 ? '0' + seconds : seconds;
+
+            const timeString = hours + ':' + minutes + ':' + seconds + ' ' + amPm;
+            document.getElementById('liveTime').innerText = timeString;
+        }
+        setInterval(updateTime, 1000); // Update time every second
+    </script>
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #0B2545; color: #ffffff;">
+
+    <!-- Navigation Bar -->
+    <header style="display: flex; justify-content: space-between; align-items: center; background: #082032; padding: 15px 20px;">
+        <div style="font-size: 24px; font-weight: bold; color: #00A8E8;">Banking System</div>
+        <div id="liveTime" style="font-size: 18px; color: #00A8E8;"></div>
+        <nav>
+            <ul style="list-style: none; display: flex; gap: 20px; margin: 0; padding: 0;">
+                <li><a href="/register" style="color: #00A8E8; text-decoration: none; font-weight: bold;">Register</a></li>
+                <li><a href="/login" style="color: #00A8E8; text-decoration: none; font-weight: bold;">Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section style="text-align: center; padding: 50px 20px; background: #0E2A47;">
+        <h1 style="color: #00A8E8; font-size: 36px;">Welcome to Our Banking System</h1>
+        <p style="font-size: 18px;">Secure and modern banking at your fingertips.</p>
+        <a href="/register" style="background: #00A8E8; color: #ffffff; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 5px; font-size: 16px;">Get Started</a>
+    </section>
+
+    <!-- Features Section -->
+    <section style="text-align: center; padding: 40px; background: #0B2545;">
+        <h2 style="color: #00A8E8;">Why Choose Us?</h2>
+        <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
+            <div style="width: 30%; padding: 20px; background: #082032; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 168, 232, 0.2);">
+                <h3 style="color: #00A8E8;">Secure Transactions</h3>
+                <p>Bank with confidence using our top-tier security.</p>
+            </div>
+            <div style="width: 30%; padding: 20px; background: #082032; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 168, 232, 0.2);">
+                <h3 style="color: #00A8E8;">24/7 Support</h3>
+                <p>Round-the-clock assistance for all your banking needs.</p>
+            </div>
+            <div style="width: 30%; padding: 20px; background: #082032; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 168, 232, 0.2);">
+                <h3 style="color: #00A8E8;">Instant Notifications</h3>
+                <p>Stay updated with real-time banking alerts.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Us Section -->
+    <section style="text-align: center; padding: 40px; background: #0E2A47;">
+        <h2 style="color: #00A8E8;">About Us</h2>
+        <p>We are committed to providing seamless financial solutions for a modern world.</p>
+    </section>
+
+    <!-- Contact Section -->
+    <section style="text-align: center; padding: 40px; background: #0B2545;">
+        <h2 style="color: #00A8E8;">Contact Us</h2>
+        <p>Email: support@bankingsystem.com</p>
+        <p>Phone: +123 456 7890</p>
+    </section>
+
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 20px; background: #082032;">
+        <p style="color: #00A8E8;">&copy; 2025 Banking System. All rights reserved.</p>
+    </footer>
+
+    <script>updateTime();</script> <!-- Initialize the time function on page load -->
+
+</body>
+</html>
