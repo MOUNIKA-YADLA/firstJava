@@ -1,0 +1,174 @@
+upload.html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Upload Excel File</title>
+    <script>
+        function uploadFile() {
+            let formData = new FormData();
+            formData.append("file", document.getElementById("fileInput").files[0]);
+
+            fetch("/api/uploadFile", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("message").innerText = data.message;
+                if (data.status === "success") {
+                    document.getElementById("validRecords").innerText = "Valid records: " + data.validRecords.length;
+                    if (data.errorFileUrl) {
+                        document.getElementById("errorReport").innerHTML = `<a href="${data.errorFileUrl}" download>Download Error Report</a>`;
+                    }
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+    </script>
+</head>
+<body>
+    <h2>Upload Excel File</h2>
+    
+    <input type="file" id="fileInput">
+    <button onclick="uploadFile()">Upload</button>
+
+    <p id="message"></p>
+    <p id="validRecords"></p>
+    <p id="errorReport"></p>
+    
+    <button onclick="window.location.href='/dashboard'">Back to Dashboard</button>
+
+
+
+</body>
+</html>
+
+
+
+
+
+
+
+ExcelService
+
+@Service
+public class ExcelService {
+
+    @Autowired
+    private BankAccountRepository bankAccountRepository;
+
+    public Map<String, Object> processExcelFile(MultipartFile file) throws IOException {
+        Map<String, Object> result = new HashMap<>();
+        List<BankAccount> validAccounts = new ArrayList<>();
+        List<String> errorMessages = new ArrayList<>();
+
+        Workbook workbook = new XSSFWorkbook(file.getInputStream());
+        Sheet sheet = workbook.getSheetAt(0);
+
+        for (Row row : sheet) {
+            if (row.getRowNum() == 0) continue; // Skip header row
+
+            String accountId = row.getCell(0).getStringCellValue();
+            String accountName = row.getCell(1).getStringCellValue();
+            double balance = row.getCell(2).getNumericCellValue();
+
+            // Validation
+            if (accountId.length() > 8 || accountName.isEmpty()) {
+                errorMessages.add("Row " + (row.getRowNum() + 1) + ": Invalid data");
+            } else {
+                validAccounts.add(new BankAccount(accountId, accountName, balance));
+            }
+        }
+
+        workbook.close();
+
+        // Save valid accounts to database
+        if (!validAccounts.isEmpty()) {
+            bankAccountRepository.saveAll(validAccounts);
+        }
+
+        // Generate error file if there are errors
+        String errorFileUrl = null;
+        if (!errorMessages.isEmpty()) {
+            errorFileUrl = generateErrorPdf(errorMessages);
+        }
+
+        result.put("validRecords", validAccounts);
+        result.put("invalidRecords", errorMessages);
+        result.put("errorFileUrl", errorFileUrl);
+
+        return result;
+    }
+
+    private String generateErrorPdf(List<String> errors) {
+        // Generate and save a PDF file listing errors
+        String filePath = "C:/reports/error_report.pdf"; // Change to your location
+
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage();
+            document.addPage(page);
+
+            PDPageContentStream contentStream = new PDPageContentStream(document, page);
+            contentStream.beginText();
+            contentStream.setFont(PDType1Font.HELVETICA, 12);
+            contentStream.newLineAtOffset(50, 700);
+            contentStream.showText("Error Report:");
+            
+            int y = 680;
+            for (String error : errors) {
+                contentStream.newLineAtOffset(0, -20);
+                contentStream.showText(error);
+                y -= 20;
+                if (y < 50) break;
+            }
+
+            contentStream.endText();
+            contentStream.close();
+
+            document.save(filePath);
+            document.close();
+
+            return "/reports/error_report.pdf"; // Path for frontend
+        } catch (IOException e) {
+            return null;
+        }
+    }
+}
+
+
+cintroller
+@RestController
+@RequestMapping("/api")
+public class FileUploadController {
+
+    @Autowired
+    private ExcelService excelService;
+
+    @PostMapping("/uploadFile")
+    public ResponseEntity<Map<String, Object>> uploadFile(@RequestParam("file") MultipartFile file) {
+        Map<String, Object> response = new HashMap<>();
+
+        if (file.isEmpty()) {
+            response.put("message", "Please upload a file!");
+            response.put("status", "error");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        try {
+            // Process the file
+            Map<String, Object> result = excelService.processExcelFile(file);
+
+            response.put("message", "File uploaded successfully!");
+            response.put("status", "success");
+            response.put("validRecords", result.get("validRecords"));
+            response.put("invalidRecords", result.get("invalidRecords"));
+            response.put("errorFileUrl", result.get("errorFileUrl"));
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("message", "Error processing file: " + e.getMessage());
+            response.put("status", "error");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+}
