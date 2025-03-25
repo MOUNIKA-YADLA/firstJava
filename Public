@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Banking System - Welcome</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <style>
+        /* General Styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #051937, #004d7a);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Navigation Bar */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: rgba(0, 77, 122, 0.9);
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            animation: slideDown 1s ease-in-out;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Clock */
+        #liveTime {
+            font-size: 18px;
+            font-weight: bold;
+            color: #FFD700;
+            transition: transform 0.5s ease-in-out;
+        }
+
+        #liveTime:hover {
+            transform: scale(1.1);
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, #0A1931, #1B3B6F);
+            animation: fadeIn 1.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero h1 {
+            color: #00E8FC;
+            font-size: 38px;
+            font-weight: bold;
+            animation: bounceIn 1.5s ease-in-out;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.9); opacity: 0; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+
+        .hero a {
+            background: #00E8FC;
+            color: #051937;
+            padding: 14px 28px;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 5px;
+            font-size: 18px;
+            box-shadow: 0px 5px 10px rgba(0, 232, 252, 0.3);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .hero a:hover {
+            transform: scale(1.1);
+            box-shadow: 0px 8px 20px rgba(0, 232, 252, 0.5);
+        }
+
+        /* Features Section */
+        .features {
+            text-align: center;
+            padding: 50px 20px;
+            background: #051937;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 1s ease-in-out, transform 1s ease-in-out;
+        }
+
+        .feature-card {
+            width: 30%;
+            padding: 25px;
+            background: #062C43;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 232, 252, 0.2);
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 0 20px rgba(0, 232, 252, 0.5);
+        }
+
+        /* About & Contact Section */
+        .about, .contact {
+            text-align: center;
+            padding: 50px 20px;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 1s ease-in-out, transform 1s ease-in-out;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 25px;
+            background: rgba(0, 77, 122, 0.9);
+        }
+    </style>
+
+    <script>
+        function updateTime() {
+            const now = new Date();
+            let hours = now.getHours();
+            let minutes = now.getMinutes();
+            let seconds = now.getSeconds();
+            let amPm = hours >= 12 ? 'PM' : 'AM';
+
+            hours = hours % 12 || 12;
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            seconds = seconds < 10 ? '0' + seconds : seconds;
+
+            document.getElementById('liveTime').innerText = hours + ':' + minutes + ':' + seconds + ' ' + amPm;
+        }
+
+        function revealSections() {
+            let sections = document.querySelectorAll('.features, .about, .contact');
+            sections.forEach((section) => {
+                let position = section.getBoundingClientRect().top;
+                let windowHeight = window.innerHeight;
+                if (position < windowHeight - 100) {
+                    section.style.opacity = '1';
+                    section.style.transform = 'translateY(0)';
+                }
+            });
+        }
+
+        document.addEventListener('scroll', revealSections);
+        setInterval(updateTime, 1000);
+    </script>
+
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <header>
+        <div style="font-size: 26px; font-weight: bold; color: #00E8FC;">Banking System</div>
+        <div id="liveTime"></div>
+        <nav>
+            <ul style="list-style: none; display: flex; gap: 20px; margin: 0; padding: 0;">
+                <li><a href="/register" style="color: #FFD700; text-decoration: none; font-weight: bold; font-size: 16px;">Register</a></li>
+                <li><a href="/login" style="color: #FFD700; text-decoration: none; font-weight: bold; font-size: 16px;">Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>Welcome to the Future of Banking</h1>
+        <p>Secure, smart, and seamless financial solutions.</p>
+        <a href="/register">Get Started</a>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <h2>Why Choose Us?</h2>
+        <div class="feature-card">Secure Transactions</div>
+        <div class="feature-card">24/7 Support</div>
+        <div class="feature-card">Real-time Notifications</div>
+    </section>
+
+    <!-- About Us Section -->
+    <section class="about">
+        <h2>About Us</h2>
+        <p>We are redefining digital banking with next-gen security.</p>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact">
+        <h2>Contact Us</h2>
+        <p>Email: support@bankingsystem.com</p>
+        <p>Phone: +123 456 7890</p>
+    </section>
+
+    <footer>&copy; 2025 Banking System. All rights reserved.</footer>
+
+    <script>updateTime(); revealSections();</script>
+
+</body>
+</html>
