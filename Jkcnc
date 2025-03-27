@@ -1,0 +1,283 @@
+@Entity
+@Table(name = "bank_accounts")
+public class BankAccount {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(name = "account_id", length = 8, unique = true)
+    private String accountId;
+    
+    @Column(name = "account_name", nullable = false)
+    private String accountName;
+    
+    @Column(name = "account_type")
+    private String accountType;
+    
+    @Column(name = "balance")
+    private BigDecimal balance;
+    
+    @Column(name = "branch_code")
+    private String branchCode;
+    
+    // Constructors, getters, setters
+}
+
+
+repo
+public interface BankAccountRepository extends JpaRepository<BankAccount, Long> {
+    boolean existsByAccountId(String accountId);
+}
+
+
+
+
+
+
+@Service
+public class BankAccountExcelService {
+    
+    @Autowired
+    private BankAccountRepository repository;
+    
+    public List<BankAccountUploadResult> processExcelFile(MultipartFile file) {
+        List<BankAccountUploadResult> results = new ArrayList<>();
+        
+        try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
+            Sheet sheet = workbook.getSheetAt(0);
+            Iterator<Row> rows = sheet.iterator();
+            
+            // Skip header row
+            if (rows.hasNext()) rows.next();
+            
+            while (rows.hasNext()) {
+                Row currentRow = rows.next();
+                BankAccountUploadResult result = new BankAccountUploadResult();
+                BankAccount account = new BankAccount();
+                
+                try {
+                    // Read data from Excel
+                    account.setAccountId(currentRow.getCell(0).getStringCellValue());
+                    account.setAccountName(currentRow.getCell(1).getStringCellValue());
+                    account.setAccountType(currentRow.getCell(2).getStringCellValue());
+                    account.setBalance(BigDecimal.valueOf(currentRow.getCell(3).getNumericCellValue()));
+                    account.setBranchCode(currentRow.getCell(4).getStringCellValue());
+                    
+                    // Validate
+                    validateAccount(account);
+                    
+                    // Save if valid
+                    repository.save(account);
+                    result.setSuccess(true);
+                    result.setMessage("Account created successfully");
+                } catch (Exception e) {
+                    result.setSuccess(false);
+                    result.setMessage(e.getMessage());
+                }
+                
+                result.setAccountId(account.getAccountId());
+                result.setAccountName(account.getAccountName());
+                results.add(result);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to process Excel file: " + e.getMessage());
+        }
+        
+        return results;
+    }
+    
+    private void validateAccount(BankAccount account) {
+        if (account.getAccountId() == null || account.getAccountId().length() > 8) {
+            throw new IllegalArgumentException("Account ID must be 8 characters or less");
+        }
+        
+        if (repository.existsByAccountId(account.getAccountId())) {
+            throw new IllegalArgumentException("Account ID already exists");
+        }
+        
+        if (account.getAccountName() == null || account.getAccountName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Account name cannot be blank");
+        }
+        
+        if (account.getBalance() == null || account.getBalance().compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Balance must be positive");
+        }
+    }
+    
+    public byte[] generateResultFile(List<BankAccountUploadResult> results) {
+        try (Workbook workbook = new XSSFWorkbook(); 
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            
+            Sheet sheet = workbook.createSheet("Upload Results");
+            
+            // Create header
+            Row headerRow = sheet.createRow(0);
+            headerRow.createCell(0).setCellValue("Account ID");
+            headerRow.createCell(1).setCellValue("Account Name");
+            headerRow.createCell(2).setCellValue("Status");
+            headerRow.createCell(3).setCellValue("Message");
+            
+            // Fill data
+            int rowNum = 1;
+            for (BankAccountUploadResult result : results) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(result.getAccountId());
+                row.createCell(1).setCellValue(result.getAccountName());
+                row.createCell(2).setCellValue(result.isSuccess() ? "Success" : "Failed");
+                row.createCell(3).setCellValue(result.getMessage());
+            }
+            
+            workbook.write(out);
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to generate result file", e);
+        }
+    }
+}
+
+
+
+public class BankAccountUploadResult {
+    private String accountId;
+    private String accountName;
+    private boolean success;
+    private String message;
+    
+    // Getters and setters
+}
+
+
+@Controller
+@RequestMapping("/bank-accounts")
+public class BankAccountController {
+    
+    @Autowired
+    private BankAccountExcelService excelService;
+    
+    @GetMapping("/upload")
+    public String showUploadForm(Model model) {
+        return "bank-accounts/upload";
+    }
+    
+    @PostMapping("/upload")
+    public String handleFileUpload(@RequestParam("file") MultipartFile file, 
+                                 Model model, 
+                                 HttpServletResponse response) {
+        if (file.isEmpty()) {
+            model.addAttribute("error", "Please select a file to upload");
+            return "bank-accounts/upload";
+        }
+        
+        try {
+            List<BankAccountUploadResult> results = excelService.processExcelFile(file);
+            byte[] resultFile = excelService.generateResultFile(results);
+            
+            model.addAttribute("results", results);
+            
+            // Prepare response for file download
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setHeader("Content-Disposition", "attachment; filename=upload_results.xlsx");
+            response.getOutputStream().write(resultFile);
+            response.getOutputStream().flush();
+            
+            return "bank-accounts/upload-result";
+        } catch (Exception e) {
+            model.addAttribute("error", "Error processing file: " + e.getMessage());
+            return "bank-accounts/upload";
+        }
+    }
+}
+
+
+
+
+upload.hyml
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Bank Accounts</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Upload Bank Accounts</h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" th:action="@{/bank-accounts/upload}" enctype="multipart/form-data">
+                            <div class="form-group">
+                                <label for="file">Select Excel File:</label>
+                                <input type="file" class="form-control" id="file" name="file" accept=".xlsx,.xls" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-3">Upload</button>
+                        </form>
+                        
+                        <div th:if="${error}" class="alert alert-danger mt-3" th:text="${error}"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+
+
+
+result
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Results</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Upload Results</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            Your results file is downloading automatically. Below is a summary:
+                        </div>
+                        
+                        <table class="table table-bordered">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>Account ID</th>
+                                    <th>Account Name</th>
+                                    <th>Status</th>
+                                    <th>Message</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="result : ${results}" 
+                                    th:class="${result.success} ? 'table-success' : 'table-danger'">
+                                    <td th:text="${result.accountId}"></td>
+                                    <td th:text="${result.accountName}"></td>
+                                    <td th:text="${result.success} ? 'Success' : 'Failed'"></td>
+                                    <td th:text="${result.message}"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <a th:href="@{/bank-accounts/upload}" class="btn btn-primary">Upload Another File</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+
+
+
