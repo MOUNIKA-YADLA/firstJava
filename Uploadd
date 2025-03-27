@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bulk Bank Account Upload</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .upload-card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: none;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+        
+        .upload-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1.5rem;
+            border-bottom: none;
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        
+        .file-upload-wrapper {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+        
+        .file-upload-label {
+            display: flex;
+            align-items: center;
+            padding: 1.5rem;
+            background-color: white;
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload-label:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+        
+        .file-upload-input {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .btn-upload {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-upload:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+        
+        .file-info {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .requirements {
+            background-color: #f8f9fa;
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .requirements h5 {
+            color: var(--secondary-color);
+        }
+        
+        .requirements ul {
+            padding-left: 1.5rem;
+        }
+        
+        .requirements li {
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="upload-card card">
+                    <div class="card-header text-center">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <h2 class="mb-0">Bulk Bank Account Upload</h2>
+                        <p class="mb-0">Upload Excel file to create multiple bank accounts at once</p>
+                    </div>
+                    <div class="card-body p-4">
+                        <form method="POST" th:action="@{/bank-accounts/upload}" enctype="multipart/form-data" id="uploadForm">
+                            <div class="file-upload-wrapper">
+                                <label for="file" class="file-upload-label d-flex flex-column align-items-center">
+                                    <i class="fas fa-file-excel mb-3" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                                    <h5>Drag & drop your file here</h5>
+                                    <p class="text-muted">or click to browse</p>
+                                    <span class="badge bg-light text-dark mt-2">Supports: .xlsx, .xls</span>
+                                </label>
+                                <input type="file" class="file-upload-input" id="file" name="file" accept=".xlsx,.xls" required>
+                            </div>
+                            
+                            <div class="file-info" id="fileInfo">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-file-excel me-2" style="color: #1d6f42;"></i>
+                                        <span id="fileName">No file selected</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" id="clearFile">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="progress mt-2" style="height: 6px; display: none;" id="progressBar">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid mt-4">
+                                <button type="submit" class="btn btn-upload btn-lg" id="uploadBtn">
+                                    <i class="fas fa-upload me-2"></i> Upload File
+                                </button>
+                            </div>
+                            
+                            <div th:if="${error}" class="alert alert-danger mt-3" th:text="${error}"></div>
+                        </form>
+                        
+                        <div class="requirements mt-4">
+                            <h5><i class="fas fa-info-circle me-2"></i>File Requirements</h5>
+                            <ul>
+                                <li>Excel file must have the following columns in order: <strong>Account ID, Account Name, Account Type, Balance, Branch Code</strong></li>
+                                <li>Account ID must be 8 characters or less and unique</li>
+                                <li>Account Name cannot be blank</li>
+                                <li>Balance must be a positive number</li>
+                                <li>First row should be headers (will be skipped during processing)</li>
+                                <li>Maximum file size: 5MB</li>
+                            </ul>
+                            <p class="mb-0 mt-2">
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#sampleModal">
+                                    <i class="fas fa-download me-1"></i>Download sample template
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sample Template Modal -->
+    <div class="modal fade" id="sampleModal" tabindex="-1" aria-labelledby="sampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sampleModalLabel">Download Sample Template</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Download our sample Excel template to ensure your file has the correct format:</p>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        The template includes example data and the required column structure.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a th:href="@{/templates/bank-accounts-template.xlsx}" class="btn btn-primary">
+                        <i class="fas fa-download me-1"></i> Download Template
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap 5 JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('file');
+            const fileInfo = document.getElementById('fileInfo');
+            const fileName = document.getElementById('fileName');
+            const clearFile = document.getElementById('clearFile');
+            const uploadForm = document.getElementById('uploadForm');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const progressBar = document.getElementById('progressBar');
+            
+            // Handle file selection
+            fileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    fileName.textContent = this.files[0].name;
+                    fileInfo.style.display = 'block';
+                } else {
+                    fileInfo.style.display = 'none';
+                }
+            });
+            
+            // Clear file selection
+            clearFile.addEventListener('click', function() {
+                fileInput.value = '';
+                fileInfo.style.display = 'none';
+            });
+            
+            // Drag and drop functionality
+            const dropArea = document.querySelector('.file-upload-label');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                dropArea.style.borderColor = 'var(--primary-color)';
+                dropArea.style.backgroundColor = 'rgba(52, 152, 219, 0.1)';
+            }
+            
+            function unhighlight() {
+                dropArea.style.borderColor = '#ddd';
+                dropArea.style.backgroundColor = 'white';
+            }
+            
+            dropArea.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                fileInput.files = files;
+                fileName.textContent = files[0].name;
+                fileInfo.style.display = 'block';
+            }
+            
+            // Form submission with progress indicator
+            uploadForm.addEventListener('submit', function() {
+                uploadBtn.disabled = true;
+                uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Uploading...';
+                progressBar.style.display = 'block';
+                
+                // Simulate progress (in real app, you'd use XMLHttpRequest with progress events)
+                const progressBarInner = progressBar.querySelector('.progress-bar');
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 5;
+                    progressBarInner.style.width = `${progress}%`;
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                    }
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>
