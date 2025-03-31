@@ -1,0 +1,112 @@
+package onboarduser;
+import java.time.LocalDate;
+import java.util.*;
+public class Registration {
+    private Set<String> mobileSet = new HashSet<>();
+    public boolean register(User user) {
+        if (!validateName(user.getName())  !validateMobile(user.getMobile())) {
+            return false;
+        }
+        mobileSet.add(user.getMobile());
+        return true;
+    }
+    public boolean validateName(String name) {
+        if (name == null  name.trim().isEmpty()) {
+            System.out.println("NAME IS MANDATORY");
+            return false;
+        }
+        return true;
+    }
+
+    public boolean validateMobile(String mobileNo) {
+        if (mobileNo == null || mobileNo.trim().isEmpty()) {
+            System.out.println("MOBILE NUMBER IS MANDATORY");
+            return false;
+        }
+        if (mobileNo.length() != 10) {
+            System.out.println("MOBILE NUMBER MUST BE 10 DIGITS");
+            return false;
+        }
+        if (mobileSet.contains(mobileNo)) {
+            System.out.println("DUPLICATE MOBILE NUMBER: " + mobileNo);
+            return false;
+        }
+        return true;
+    }
+
+    
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        Registration reg = new Registration();
+        
+        List<User> listOfUsers = new ArrayList<>();
+        List<RestaurantUser> restaurantUsers = new ArrayList<>();
+
+        System.out.print("No. of users: ");
+        int n = sc.nextInt();
+        sc.nextLine();
+
+        for (int i = 0; i < n; i++) {
+            System.out.println("Details of user:" + (i + 1));
+            RestaurantUser user = new RestaurantUser();
+
+            System.out.print("Name: ");
+            user.setName(sc.nextLine());
+
+            System.out.print("Age: ");
+            user.setAge(sc.nextInt());
+            sc.nextLine();
+
+            System.out.print("Mob No: ");
+            user.setMobile(sc.nextLine());
+
+            System.out.print("Address: ");
+            user.setAddress(sc.nextLine());
+
+            user.setRegistrationDate(LocalDate.now());
+
+            System.out.println("Registered Restaurant users:");
+            System.out.print("Menu Type: ");
+            user.setMenuType(sc.nextLine());
+
+            System.out.print("Table Count: ");
+            user.setTableCount(sc.nextInt());
+            sc.nextLine();
+
+            System.out.print("fav foodcount: ");
+            int foodCount = sc.nextInt();
+            sc.nextLine();
+
+            List<String> foodList = new ArrayList<>();
+            for (int j = 0; j < foodCount; j++) {
+                System.out.print("fav food " + (j + 1) + ": ");
+                foodList.add(sc.nextLine());
+            }
+            user.setFoodList(foodList);
+
+            if (reg.register(user)) {
+                listOfUsers.add(user);
+                restaurantUsers.add(user);
+                System.out.println("Registered Successfully\n");
+            } else {
+                System.out.println("Registration failed\n");
+            }
+        }
+
+        listOfUsers.sort(Comparator.comparing(User::getName, Comparator.nullsLast(String::compareTo)));
+
+        System.out.println("-------------REGISTERED USERS-------------");
+        for (User u : listOfUsers) {
+            u.display();
+            System.out.println();
+        }
+
+        System.out.println("-------------Restaurant REGISTERED USERS-------------");
+        for (RestaurantUser ru : restaurantUsers) {
+            ru.display();
+            System.out.println();
+        }
+
+        sc.close();
+    }
+}
