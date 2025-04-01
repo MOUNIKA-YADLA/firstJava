@@ -1,0 +1,308 @@
+package com.example.bankupload.model;
+
+import javax.persistence.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "audit_logs")
+public class AuditLog {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    private String action;
+    private String filename;
+    private String username;
+    private int recordsProcessed;
+    private String status;
+    private String message;
+    
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    
+    // Getters and setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getAction() {
+        return action;
+    }
+
+    public void setAction(String action) {
+        this.action = action;
+    }
+
+    public String getFilename() {
+        return filename;
+    }
+
+    public void setFilename(String filename) {
+        this.filename = filename;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public int getRecordsProcessed() {
+        return recordsProcessed;
+    }
+
+    public void setRecordsProcessed(int recordsProcessed) {
+        this.recordsProcessed = recordsProcessed;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+}
+
+
+
+
+
+
+
+package com.example.bankupload.repository;
+
+import com.example.bankupload.model.AuditLog;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
+    List<AuditLog> findAllByOrderByCreatedAtDesc();
+}
+
+
+
+
+package com.example.bankupload.controller;
+
+import com.example.bankupload.model.AuditLog;
+import com.example.bankupload.model.BankAccount;
+import com.example.bankupload.repository.AuditLogRepository;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.*;
+
+@Controller
+public class BankAccountController {
+
+    private final AuditLogRepository auditLogRepository;
+    
+    public BankAccountController(AuditLogRepository auditLogRepository) {
+        this.auditLogRepository = auditLogRepository;
+    }
+
+    private static final String UPLOAD_DIR = "uploaded_files/";
+    private static final String RESULTS_DIR = "results/";
+
+    @GetMapping("/")
+    public String uploadPage(Model model) {
+        // Add audit history to the model
+        model.addAttribute("auditLogs", auditLogRepository.findAllByOrderByCreatedAtDesc());
+        return "upload";
+    }
+
+    @PostMapping("/bank-accounts/upload")
+    @ResponseBody
+    public ResponseEntity<?> handleFileUpload(@RequestParam("file") MultipartFile file) {
+        AuditLog auditLog = new AuditLog();
+        auditLog.setAction("FILE_UPLOAD");
+        auditLog.setFilename(file.getOriginalFilename());
+        auditLog.setCreatedAt(LocalDateTime.now());
+        
+        try {
+            // Get current username
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String username = authentication.getName();
+            auditLog.setUsername(username);
+            
+            // Create directories if they don't exist
+            Files.createDirectories(Paths.get(UPLOAD_DIR));
+            Files.createDirectories(Paths.get(RESULTS_DIR));
+            
+            // Validate file
+            if (file.isEmpty()) {
+                auditLog.setStatus("FAILED");
+                auditLog.setMessage("Empty file uploaded");
+                auditLogRepository.save(auditLog);
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Please select a file"));
+            }
+            
+            if (!file.getOriginalFilename().endsWith(".xlsx") && !file.getOriginalFilename().endsWith(".xls")) {
+                auditLog.setStatus("FAILED");
+                auditLog.setMessage("Invalid file type");
+                auditLogRepository.save(auditLog);
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Only Excel files are allowed"));
+            }
+            
+            // Process the uploaded file
+            List<BankAccount> accounts = processUploadedFile(file);
+            auditLog.setRecordsProcessed(accounts.size());
+            
+            // Generate results file
+            String resultsFilename = "results_" + System.currentTimeMillis() + ".xlsx";
+            File resultsFile = generateResultsFile(accounts, resultsFilename);
+            
+            // Save successful audit log
+            auditLog.setStatus("SUCCESS");
+            auditLog.setMessage("File processed successfully");
+            auditLogRepository.save(auditLog);
+            
+            // Return success response with download URL
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "File processed successfully",
+                "downloadUrl", "/download/" + resultsFilename,
+                "filename", resultsFilename
+            ));
+            
+        } catch (Exception e) {
+            // Save failed audit log
+            auditLog.setStatus("FAILED");
+            auditLog.setMessage("Error: " + e.getMessage());
+            auditLogRepository.save(auditLog);
+            
+            return ResponseEntity.internalServerError().body(Map.of(
+                "success", false,
+                "message", "Error processing file: " + e.getMessage()
+            ));
+        }
+    }
+
+    // ... [keep all other existing methods unchanged] ...
+}
+
+
+
+<!-- Audit History Section -->
+<div class="row justify-content-center mt-5">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0"><i class="fas fa-history me-2"></i>Upload History</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date/Time</th>
+                                <th>User</th>
+                                <th>Filename</th>
+                                <th>Records</th>
+                                <th>Status</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="log : ${auditLogs}">
+                                <td th:text="${#temporals.format(log.createdAt, 'yyyy-MM-dd HH:mm')}"></td>
+                                <td th:text="${log.username}"></td>
+                                <td th:text="${log.filename}"></td>
+                                <td th:text="${log.recordsProcessed}"></td>
+                                <td>
+                                    <span th:if="${log.status == 'SUCCESS'}" class="badge bg-success">Success</span>
+                                    <span th:if="${log.status == 'FAILED'}" class="badge bg-danger">Failed</span>
+                                </td>
+                                <td th:text="${log.message}" style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+/* Audit History Styles */
+.audit-history {
+    margin-top: 3rem;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.audit-history .card-header {
+    border-radius: 10px 10px 0 0 !important;
+}
+
+.table-responsive {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 10;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
