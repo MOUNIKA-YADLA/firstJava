@@ -1,0 +1,118 @@
+@PostMapping("/upload")
+public String handleFileUpload(@RequestParam("file") MultipartFile file, 
+                               Model model, 
+                               HttpServletResponse response, 
+                               Principal principal) {
+    if (file.isEmpty()) {
+        model.addAttribute("error", "Please select a file to upload");
+        return "bank-accounts/upload";
+    }
+
+    try {
+        // Process the uploaded file
+        List<BankAccountUploadResult> results = excelService.processExcelFile(file);
+        byte[] resultFile = excelService.generateResultFile(results);
+
+        // Save file to server
+        Path path = Paths.get("uploads/" + file.getOriginalFilename());
+        Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+
+        // Save file details in audit history
+        UploadedFileHistory fileHistory = new UploadedFileHistory(file.getOriginalFilename(), principal.getName());
+        uploadedFileHistoryRepository.save(fileHistory);
+
+        model.addAttribute("results", results);
+
+        // Prepare response for file download
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=upload_results.xlsx");
+        response.getOutputStream().write(resultFile);
+        response.getOutputStream().flush();
+
+        return "bank-accounts/upload-result";
+    } catch (Exception e) {
+        model.addAttribute("error", "Error processing file: " + e.getMessage());
+        return "bank-accounts/upload";
+    }
+}
+
+
+
+
+
+@Controller
+@RequestMapping("/audit-history")
+public class AuditHistoryController {
+
+    @Autowired
+    private UploadedFileHistoryRepository uploadedFileHistoryRepository;
+
+    @GetMapping
+    public String viewAuditHistory(Model model) {
+        List<UploadedFileHistory> uploadedFiles = uploadedFileHistoryRepository.findAllByOrderByUploadDateDesc();
+        model.addAttribute("uploadedFiles", uploadedFiles);
+        return "audit-history";  // Thymeleaf template
+    }
+}
+
+
+
+
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Audit History</title>
+    <link rel="stylesheet" href="/static/main.css">
+</head>
+<body>
+    <h2>Audit History</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>File Name</th>
+                <th>Uploaded By</th>
+                <th>Upload Date</th>
+                <th>Download</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="file : ${uploadedFiles}">
+                <td th:text="${file.fileName}"></td>
+                <td th:text="${file.uploadedBy}"></td>
+                <td th:text="${file.uploadDate}"></td>
+                <td>
+                    <a th:href="@{'/download/' + ${file.fileName}}">Download</a>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
+
+
+
+
+
+@GetMapping("/download/{fileName}")
+public ResponseEntity<Resource> downloadFile(@PathVariable String fileName) {
+    try {
+        Path filePath = Paths.get("uploads").resolve(fileName).normalize();
+        Resource resource = new UrlResource(filePath.toUri());
+
+        if (!resource.exists()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(resource);
+    } catch (Exception e) {
+        return ResponseEntity.internalServerError().build();
+    }
+}
+
+
+
