@@ -1,28 +1,57 @@
-    @GetMapping("/download-results")
-    public void downloadResults(HttpServletResponse response) throws IOException {
-        byte[] resultFile = excelService.generateResultFile();
-        
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=upload_results.xlsx");
-        response.getOutputStream().write(resultFile);
-        response.flushBuffer();
-    }
-
-    // Option 2: If you must do it in one request (Not recommended)
-    @PostMapping("/upload-and-download")
-    public void handleFileUploadAndDownload(@RequestParam("file") MultipartFile file,
-                                         HttpServletResponse response) throws IOException {
+        @GetMapping("/download-results")
+    public void downloadResults(@ModelAttribute("processingResults") List<BankAccountUploadResult> results,
+                              HttpServletResponse response) throws IOException {
         try {
-            List<BankAccountUploadResult> results = excelService.processExcelFile(file);
+            // Generate file using the results stored in session
             byte[] resultFile = excelService.generateResultFile(results);
             
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             response.setHeader("Content-Disposition", "attachment; filename=upload_results.xlsx");
-            response.getOutputStream().write(resultFile);
-            response.flushBuffer();
+            
+            try (OutputStream out = response.getOutputStream()) {
+                out.write(resultFile);
+                out.flush();
+            }
         } catch (Exception e) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, 
-                            "Error processing file: " + e.getMessage());
+                            "Error generating download file: " + e.getMessage());
+        }
+    }
+}
+```
+
+### 2. Modify your service to accept results:
+
+```java
+@Service
+public class BankAccountExcelService {
+    
+    // Your existing processExcelFile method...
+    
+    public byte[] generateResultFile(List<BankAccountUploadResult> results) throws IOException {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+             Workbook workbook = new XSSFWorkbook()) {
+            
+            // Create Excel file using the results
+            Sheet sheet = workbook.createSheet("Results");
+            
+            // Add header row
+            Row headerRow = sheet.createRow(0);
+            headerRow.createCell(0).setCellValue("Account ID");
+            headerRow.createCell(1).setCellValue("Status");
+            headerRow.createCell(2).setCellValue("Message");
+            
+            // Add data rows
+            int rowNum = 1;
+            for (BankAccountUploadResult result : results) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(result.getAccountId());
+                row.createCell(1).setCellValue(result.getStatus());
+                row.createCell(2).setCellValue(result.getMessage());
+            }
+            
+            workbook.write(out);
+            return out.toByteArray();
         }
     }
 }
