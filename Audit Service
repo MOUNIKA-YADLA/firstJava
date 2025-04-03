@@ -1,0 +1,21 @@
+@Service  
+public class AuditHistoryService {  
+    private static final Logger logger = LoggerFactory.getLogger(AuditHistoryService.class);
+    
+    @Autowired  
+    private UploadedFileHistoryRepository repository;  
+    
+    public List<UploadedFileHistory> getUserUploadedFiles(String username) {  
+        logger.info("Searching for files uploaded by: {}", username);
+        
+        // Verify user exists in database
+        List<UploadedFileHistory> results = repository.findByUploadedBy(username);
+        
+        logger.info("Query returned {} files", results.size());
+        if (!results.isEmpty()) {
+            logger.info("First file found: {}", results.get(0));
+        }
+        
+        return results;
+    }  
+}
