@@ -1,0 +1,228 @@
+# **Enhanced Frontend for Upload History**
+
+Based on your API response, I'll create a polished frontend that displays the upload history in a user-friendly way. Here's the complete solution:
+
+## **1. Updated `history.html` (Modern UI)**
+```html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload History | Bank Account Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --success-color: #28a745;
+            --fail-color: #dc3545;
+        }
+        .history-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .history-card:hover {
+            transform: translateY(-3px);
+        }
+        .success-badge {
+            background-color: var(--success-color);
+        }
+        .fail-badge {
+            background-color: var(--fail-color);
+        }
+        .file-icon {
+            font-size: 1.5rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="display-5 fw-bold">
+                <i class="bi bi-clock-history"></i> Upload History
+            </h1>
+            <a href="/bank-accounts/upload" class="btn btn-primary">
+                <i class="bi bi-upload"></i> New Upload
+            </a>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-white bg-success mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Successful Records</h5>
+                        <h2 id="totalSuccess" class="card-text">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-danger mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Failed Records</h5>
+                        <h2 id="totalFail" class="card-text">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-primary mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Uploads</h5>
+                        <h2 id="totalUploads" class="card-text">0</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Table -->
+        <div class="card history-card">
+            <div class="card-header bg-white">
+                <div class="input-group mb-3" style="max-width: 300px;">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search...">
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>File</th>
+                                <th>Uploaded By</th>
+                                <th>Date & Time</th>
+                                <th class="text-end">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTable">
+                            <!-- Data will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        fetch('/api/history')
+            .then(res => res.json())
+            .then(data => {
+                // Update stats cards
+                const totalSuccess = data.reduce((sum, record) => sum + record.successCount, 0);
+                const totalFail = data.reduce((sum, record) => sum + record.failureCount, 0);
+                
+                document.getElementById('totalSuccess').textContent = totalSuccess;
+                document.getElementById('totalFail').textContent = totalFail;
+                document.getElementById('totalUploads').textContent = data.length;
+
+                // Populate table
+                const table = document.getElementById('historyTable');
+                data.forEach(record => {
+                    const row = table.insertRow();
+                    row.innerHTML = `
+                        <td>
+                            <i class="bi bi-file-excel file-icon"></i>
+                            ${record.filename}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-person-fill"></i> ${record.username}
+                            </span>
+                        </td>
+                        <td>
+                            ${new Date(record.uploadTime).toLocaleString()}
+                        </td>
+                        <td class="text-end">
+                            <span class="badge success-badge">
+                                <i class="bi bi-check-circle"></i> ${record.successCount}
+                            </span>
+                            <span class="badge fail-badge ms-2">
+                                <i class="bi bi-x-circle"></i> ${record.failureCount}
+                            </span>
+                        </td>
+                    `;
+                });
+
+                // Add search functionality
+                document.getElementById('searchInput').addEventListener('input', (e) => {
+                    const searchTerm = e.target.value.toLowerCase();
+                    const rows = table.getElementsByTagName('tr');
+                    
+                    Array.from(rows).forEach(row => {
+                        const text = row.textContent.toLowerCase();
+                        row.style.display = text.includes(searchTerm) ? '' : 'none';
+                    });
+                });
+            });
+    });
+    </script>
+</body>
+</html>
+```
+
+## **Key Improvements**
+
+### **1. Modern UI Components**
+- **Dashboard-style cards** showing total statistics
+- **Hover effects** on history entries
+- **Bootstrap Icons** for visual clarity
+- **Responsive design** works on all devices
+
+### **2. Enhanced Data Presentation**
+```javascript
+// Example of formatted row
+`<td>
+    <i class="bi bi-file-excel"></i> accountsfile.xlsx
+</td>
+<td>
+    <span class="badge bg-secondary">
+        <i class="bi bi-person-fill"></i> Mounika
+    </span>
+</td>`
+```
+
+### **3. New Features**
+- **Real-time search** (filters table as you type)
+- **Visual indicators** (color-coded success/failure counts)
+- **Interactive stats** (auto-calculated totals)
+
+### **4. Professional Touches**
+- **Card-based layout** with subtle shadows
+- **Consistent color scheme** (green for success, red for failures)
+- **Proper date formatting** (localized to user's browser)
+
+## **How It Looks Now**
+Your history data will display like this:
+
+| File | User | Date/Time | Status |
+|------|------|-----------|--------|
+| 📄 accountsfile.xlsx | 👤 Mounika | 4/3/2025, 3:23 PM | ✅ 0 ❌ 23 |
+
+With summary cards showing:
+- **Total Successful Records**: [sum of all successCount]
+- **Total Failed Records**: [sum of all failureCount] 
+- **Total Uploads**: [number of history entries]
+
+## **Next Steps**
+1. Place this file in `src/main/resources/templates/bank-accounts/history.html`
+2. Ensure your controller has the history endpoint:
+```java
+@GetMapping("/history")
+public String showHistory() {
+    return "bank-accounts/history";
+}
+```
+3. Add a link to history in your navigation:
+```html
+<a href="/bank-accounts/history" class="btn btn-link">
+    <i class="bi bi-clock-history"></i> View History
+</a>
+```
+
+Would you like me to add any of these advanced features?
+- Export history as Excel
+- User-specific filtering
+- Date range selection
+- Pagination for large datasets
