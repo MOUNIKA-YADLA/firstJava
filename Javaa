@@ -1,0 +1,42 @@
+@PostMapping("/upload")
+public String handleFileUpload(
+    @RequestParam("file") MultipartFile file,
+    Model model,
+    HttpServletResponse response,
+    Authentication authentication) {  // Add Authentication parameter
+    
+    if (file.isEmpty()) {
+        model.addAttribute("error", "Please select a file to upload");
+        return "bank-accounts/upload";
+    }
+
+    try {
+        // 1. Process the file
+        List<BankAccountUploadResult> results = excelService.processExcelFile(file);
+        byte[] resultFile = excelService.generateResultFile(results);
+
+        // 2. Record upload history (FIXED SECTION)
+        String username = authentication != null ? authentication.getName() : "SYSTEM";
+        int successCount = (int) results.stream().filter(r -> r.isSuccess()).count();
+        int failureCount = results.size() - successCount;
+        
+        uploadHistoryService.recordUpload(
+            file.getOriginalFilename(),  // Fixed method name
+            username,                  // Now properly defined
+            successCount,
+            failureCount
+        );
+
+        // 3. Prepare response
+        model.addAttribute("results", results);
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=upload_results.xlsx");
+        response.getOutputStream().write(resultFile);
+        response.getOutputStream().flush();
+        
+        return "bank-accounts/upload-results";
+    } catch (Exception e) {
+        model.addAttribute("error", "Error processing file: " + e.getMessage());
+        return "bank-accounts/upload";
+    }
+}
