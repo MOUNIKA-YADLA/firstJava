@@ -1,0 +1,65 @@
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+
+@Configuration
+@EnableWebSecurity
+public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+            .authorizeRequests()
+                // Public endpoints
+                .antMatchers("/", "/login", "/register").permitAll()
+                
+                // Manager endpoints (upload/download)
+                .antMatchers("/upload", "/download").hasRole("MANAGER")
+                
+                // Admin endpoints (audit history + admin control)
+                .antMatchers("/audit-history", "/admin/**").hasRole("ADMIN")
+                
+                // All other requests require authentication
+                .anyRequest().authenticated()
+            .and()
+            .formLogin()
+                .loginPage("/login")
+                .defaultSuccessUrl("/dashboard")
+                .permitAll()
+            .and()
+            .logout()
+                .logoutSuccessUrl("/login?logout")
+                .permitAll();
+    }
+
+    @Bean
+    @Override
+    public UserDetailsService userDetailsService() {
+        UserDetails admin = User.builder()
+            .username("admin")
+            .password(passwordEncoder().encode("Admin@123"))
+            .roles("ADMIN")
+            .build();
+
+        UserDetails manager = User.builder()
+            .username("manager")
+            .password(passwordEncoder().encode("Manager@123"))
+            .roles("MANAGER")
+            .build();
+
+        return new InMemoryUserDetailsManager(admin, manager);
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
